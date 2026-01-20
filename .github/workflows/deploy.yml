@@ -1,0 +1,30 @@
+name: Deploy Frontend (main)
+
+on:
+  push:
+    branches: ["main"]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script: |
+            set -e
+
+            # Update repo on server
+            cd /home/deploy/apps/frontend
+            git pull origin main
+
+            # Publish files to Nginx web root
+            rm -rf /home/deploy/sites/coderr/*
+            cp -r /home/deploy/apps/frontend/* /home/deploy/sites/coderr/
+
+            # Reload Nginx (deploy user can do this without password via sudoers)
+            sudo systemctl reload nginx
